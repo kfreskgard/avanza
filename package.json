@@ -2,7 +2,7 @@
   "name": "avanza",
   "version": "2.0.0",
   "description": "A wrapper for the unofficial Avanza API",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production babel lib -d dist",
     "test": "npm start && cross-env NODE_ENV=test NODE_PATH=lib ava tests/**/*.test.js",
