@@ -9,7 +9,7 @@
     "lint": "eslint lib/**/*",
     "docs": "npm start && node scripts/generate-documentation.js",
     "prepublishOnly": "npm run lint",
-    "prepare": "npm install && npm start"
+    "postinstall": "cd node_modules/avanza && npm install && npm start"
   },
   "repository": {
     "type": "git",
