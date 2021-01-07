@@ -8,7 +8,7 @@
     "test": "npm start && cross-env NODE_ENV=test NODE_PATH=lib ava tests/**/*.test.js",
     "lint": "eslint lib/**/*",
     "docs": "npm start && node scripts/generate-documentation.js",
-    "prepublishOnly": "npm run lint"
+    "prepublishOnly": "npm run lint",
     "prepare": "cd node_modules/avanza/ && npm install && npm start"
   },
   "repository": {
