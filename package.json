@@ -20,7 +20,7 @@
     "url": "https://github.com/fhqvst/avanza/issues"
   },
   "files": [
-    "libs",
+    "lib",
     "dist"
   ],
   "homepage": "https://github.com/fhqvst/avanza#readme",
