@@ -1,0 +1,41 @@
+{
+  "name": "@kfreskgard/avanza",
+  "version": "0.1.0",
+  "description": "Module implementing the web API of Avanza",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "publish-lib": "npm run build && npm publish",
+    "publish-beta": "npm run build && npm publish --tag beta",
+    "publish-dryrun": "npm run build && npm publish --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kfreskgard/avanza.git"
+  },
+  "keywords": [
+    "avanza"
+  ],
+  "author": "Kim Freskgård <dev@freskgard.se>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kfreskgard/avanza/issues"
+  },
+  "homepage": "https://github.com/kfreskgard/avanza",
+  "dependencies": {
+    "axios": "^1.2.2",
+    "axios-cookiejar-support": "^4.0.6",
+    "totp-generator": "^0.0.14",
+    "tough-cookie": "^4.1.2",
+    "typescript": "^4.9.4"
+  },
+  "devDependencies": {
+    "@types/totp-generator": "^0.0.4",
+    "@types/tough-cookie": "^4.0.2"
+  }
+}
