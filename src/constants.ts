@@ -10,4 +10,5 @@ export namespace URL {
     export const REQUESTID = 'https://www.avanza.se/_api/trading/rest/order/requestid';
     export const POSITIONS = "https://www.avanza.se/_api/position-data/positions";
     export const ACCOUNTSFORPUSH = "https://www.avanza.se/_api/trading-critical/rest/accountsforpush";
+    export const CATEGORIZEDACCOUNTS = "https://www.avanza.se/_api/account-overview/overview/categorizedAccounts";
 }

@@ -17,12 +17,10 @@ export interface AccountResponse {
 
 export interface ComparePoints {
     closingPrice: number;
-    displayablePoints: Array<DisplayablePointElement[]>;
+    displayablePoints: Array<Array<DisplayablePointClass | number>>;
     orderbookName: string;
     orderbookId: string;
 }
-
-export type DisplayablePointElement = DisplayablePointClass | number;
 
 export interface DisplayablePointClass {
     date: number;
@@ -84,11 +82,11 @@ export interface Deal {
 
 export interface DealAccount {
     accountId: string;
-    name: Name;
+    name: DealAccountName;
     type: TypeClass;
 }
 
-export interface Name {
+export interface DealAccountName {
     value: string;
 }
 
@@ -100,7 +98,7 @@ export interface DealOrderbook {
     id: string;
     name: string;
     countryCode: Code;
-    currency: CurrencyCodeEnum;
+    currency: UnitEnum;
     instrumentType: string;
     volumeFactor: string;
 }
@@ -112,7 +110,7 @@ export enum Code {
     Us = "US",
 }
 
-export enum CurrencyCodeEnum {
+export enum UnitEnum {
     Empty = "",
     Percentage = "percentage",
     Sek = "SEK",
@@ -137,6 +135,94 @@ export interface AllOrdersAndDealsResponseOrder {
     stateText: string;
     stateMessage: string;
     orderbook: DealOrderbook;
+}
+
+export interface CategorizedAccountsResponse {
+    categories: Category[];
+    accounts: CategorizedAccountsResponseAccount[];
+    loans: any[];
+    accountsSummary: AccountsSummary;
+}
+
+export interface CategorizedAccountsResponseAccount {
+    id: string;
+    categoryId: string;
+    balance: ValueUnit;
+    profit: Profit;
+    totalAcquiredValue: ValueUnit;
+    type: AccountTypeEnum;
+    totalValue: ValueUnit;
+    buyingPower: ValueUnit;
+    buyingPowerWithoutCredit: ValueUnit;
+    interestRate: ValueUnit;
+    depositInterestRate: ValueUnit;
+    loanInterestRate: ValueUnit;
+    credit: ValueUnit | null;
+    name: AccountName;
+    status: string;
+    errorStatus: string;
+    overmortgaged: boolean;
+    overdrawn: boolean;
+    performance: Performance;
+    settings: Settings;
+    clearingNumber: string;
+    accountNumber: string;
+    urlParameterId: string;
+    owner: boolean;
+}
+
+export interface ValueUnit {
+    value: number;
+    unit: UnitEnum;
+    unitType?: UnitType;
+    decimalPrecision?: number;
+}
+
+export enum UnitType {
+    Monetary = "MONETARY",
+    Percentage = "PERCENTAGE",
+    Unitless = "UNITLESS",
+}
+
+export interface AccountName {
+    defaultName: string;
+    userDefinedName: null | string;
+}
+
+export interface Performance {
+    THIS_YEAR?: Profit;
+    ALL_TIME?: Profit;
+    ONE_YEAR?: Profit;
+    THREE_YEARS?: Profit;
+    ONE_MONTH?: Profit;
+    ONE_WEEK?: Profit;
+    THREE_MONTHS?: Profit;
+}
+
+export interface Profit {
+    absolute: ValueUnit;
+    relative: ValueUnit;
+}
+
+export interface Settings {
+    IS_HIDDEN: boolean;
+}
+
+export interface AccountsSummary {
+    performance: Performance;
+    buyingPower: ValueUnit;
+    totalValue: ValueUnit;
+}
+
+export interface Category {
+    name: string;
+    totalValue: ValueUnit;
+    buyingPower: ValueUnit;
+    id: string;
+    profit: Profit;
+    performance: Performance;
+    savingsGoalView: null;
+    sortOrder: number;
 }
 
 export interface ChartResponse {
@@ -254,7 +340,7 @@ export interface Dividend {
     exDate: string;
     paymentDate?: string;
     amount: number;
-    currencyCode: CurrencyCodeEnum;
+    currencyCode: UnitEnum;
     dividendType?: DividendType;
     exDateStatus?: string;
 }
@@ -308,10 +394,10 @@ export interface OrdersAndDeals {
     orders: OrdersAndDealsOrder[];
     deals: any[];
     hasStoplossOrders: boolean;
-    accounts?: AccountElement[];
+    accounts?: OrdersAndDealsAccount[];
 }
 
-export interface AccountElement {
+export interface OrdersAndDealsAccount {
     accountId: string;
     accountName: string;
     accountType: AccountTypeEnum;
@@ -381,19 +467,6 @@ export interface CashPositionAccount {
     hasCredit: boolean;
 }
 
-export interface ValueUnit {
-    value: number;
-    unit: CurrencyCodeEnum;
-    unitType?: UnitType;
-    decimalPrecision?: number;
-}
-
-export enum UnitType {
-    Monetary = "MONETARY",
-    Percentage = "PERCENTAGE",
-    Unitless = "UNITLESS",
-}
-
 export interface WithOrderbook {
     account: CashPositionAccount;
     instrument: Instrument;
@@ -401,7 +474,7 @@ export interface WithOrderbook {
     value: ValueUnit;
     averageAcquiredPrice: ValueUnit;
     acquiredValue: ValueUnit;
-    lastTradingDayPerformance: LastTradingDayPerformance | null;
+    lastTradingDayPerformance: Profit | null;
     id: string;
 }
 
@@ -409,7 +482,7 @@ export interface Instrument {
     type: InstrumentTypeEnum;
     name: string;
     orderbook: InstrumentOrderbook | null;
-    currency: CurrencyCodeEnum;
+    currency: UnitEnum;
     isin: string;
     volumeFactor: number;
 }
@@ -455,11 +528,6 @@ export enum InstrumentTypeEnum {
     Stock = "STOCK",
     Unknown = "UNKNOWN",
     Warrant = "WARRANT",
-}
-
-export interface LastTradingDayPerformance {
-    absolute: ValueUnit;
-    relative: ValueUnit;
 }
 
 export interface QuoteResponse {
@@ -515,7 +583,7 @@ export interface Hit {
     oneQuarterAgoChange: string;
     oneQuarterAgoChangeDirection: string;
     highlightedDisplayTitle: string;
-    fundResult: FundResultUnion;
+    fundResult: FundResultClass | FundResultEnum;
 }
 
 export enum HitCurrency {
@@ -523,8 +591,6 @@ export enum HitCurrency {
     Sek = "SEK",
     Usd = "USD",
 }
-
-export type FundResultUnion = FundResultClass | FundResultEnum;
 
 export interface FundResultClass {
     morningstarRating: number;
@@ -583,10 +649,10 @@ export interface KeyIndicators {
     directYield: number;
     volatility: number;
     priceEarningsRatio: number;
-    marketCapital: ValueUnit;
-    equityPerShare: ValueUnit;
-    turnoverPerShare: ValueUnit;
-    earningsPerShare: ValueUnit;
+    marketCapital: PerShare;
+    equityPerShare: PerShare;
+    turnoverPerShare: PerShare;
+    earningsPerShare: PerShare;
     dividend?: Dividend;
     dividendsPerYear: number;
     nextReport?: Report;
@@ -604,6 +670,11 @@ export interface KeyIndicators {
     grossMargin?: number;
 }
 
+export interface PerShare {
+    value: number;
+    currency: UnitEnum;
+}
+
 export interface Report {
     date: string;
     reportType: string;
@@ -613,7 +684,7 @@ export interface Listing {
     shortName: string;
     tickerSymbol: string;
     countryCode: Code;
-    currency: CurrencyCodeEnum;
+    currency: UnitEnum;
     marketPlaceCode: string;
     marketPlaceName: string;
     marketListName?: string;

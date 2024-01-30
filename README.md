@@ -1,9 +1,9 @@
 # avanza
-A Node.js module wrapping the web API of Avanza. Tested on Node.js version 17.5.0.
+A Node.js package wrapping the web API of Avanza. Tested on Node.js version 17.5.0.
 
 ## Installation
 
-You can install the module via npm by running:
+You can install the package via npm by running:
 
     $ npm install @kfreskgard/avanza
 
