@@ -1,7 +1,7 @@
 {
   "name": "@kfreskgard/avanza",
-  "version": "0.1.0",
-  "description": "Module implementing the web API of Avanza",
+  "version": "0.2.0",
+  "description": "Package to interact with the web API of Avanza",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

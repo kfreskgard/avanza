@@ -1,4 +1,4 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse } from "./types/response";
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse } from "./types/response";
 import axios, { AxiosRequestConfig } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
@@ -118,5 +118,9 @@ export class Avanza {
 
   getPushSubscriptionId(): string {
     return this.#authInfo.pushSubscriptionId;
+  }
+
+  getCategorizedAccounts() {
+    return this.get<CategorizedAccountsResponse>(URL.CATEGORIZEDACCOUNTS);
   }
 }
