@@ -442,6 +442,53 @@ export interface TradingTerms {
     superInterestApproved: boolean;
 }
 
+export interface OrderBookResponse {
+    id: string;
+    name: string;
+    isin: string;
+    instrumentId: string;
+    marketPlace: string;
+    countryCode: Code;
+    orderbookStatus: string;
+    tickSizeList: TickSizeList;
+    collateralValue: number;
+    currency: UnitEnum;
+    minValidUntil: string;
+    maxValidUntil: string;
+    instrumentType: InstrumentTypeEnum;
+    volumeFactor: number;
+    featureSupport: FeatureSupport;
+    priceType: UnitType;
+    tradingUnit: number;
+    tickerSymbol: string;
+}
+
+export interface FeatureSupport {
+    stopLoss: boolean;
+    fillAndOrKill: boolean;
+    openVolume: boolean;
+    marketTrades: boolean;
+    marketTradesSummary: boolean;
+}
+
+export enum InstrumentTypeEnum {
+    Certificate = "CERTIFICATE",
+    Fund = "FUND",
+    Stock = "STOCK",
+    Unknown = "UNKNOWN",
+    Warrant = "WARRANT",
+}
+
+export interface TickSizeList {
+    tickSizeEntries: TickSizeEntry[];
+}
+
+export interface TickSizeEntry {
+    min: number;
+    max: number;
+    tick: number;
+}
+
 export interface OrderDepthResponse {
     receivedTime: number;
     levels: Level[];
@@ -520,14 +567,6 @@ export enum Trad {
 export interface Turnover {
     volume: ValueUnit;
     value: ValueUnit | null;
-}
-
-export enum InstrumentTypeEnum {
-    Certificate = "CERTIFICATE",
-    Fund = "FUND",
-    Stock = "STOCK",
-    Unknown = "UNKNOWN",
-    Warrant = "WARRANT",
 }
 
 export interface QuoteResponse {
