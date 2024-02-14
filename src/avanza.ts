@@ -1,4 +1,4 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse } from "./types/response";
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse } from "./types/response";
 import axios, { AxiosRequestConfig } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
@@ -125,6 +125,6 @@ export class Avanza {
   }
 
   getOrderBook(id: string) {
-    return this.get<unknown>(URL.ORDERBOOK + `/${id}`);
+    return this.get<OrderBookResponse>(URL.ORDERBOOK + `/${id}`);
   }
 }
