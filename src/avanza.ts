@@ -123,4 +123,8 @@ export class Avanza {
   getCategorizedAccounts() {
     return this.get<CategorizedAccountsResponse>(URL.CATEGORIZEDACCOUNTS);
   }
+
+  getOrderBook(id: string) {
+    return this.get<unknown>(URL.ORDERBOOK + `/${id}`);
+  }
 }
