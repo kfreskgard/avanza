@@ -12,4 +12,9 @@ export namespace URL {
     export const ACCOUNTSFORPUSH = "https://www.avanza.se/_api/trading-critical/rest/accountsforpush";
     export const CATEGORIZEDACCOUNTS = "https://www.avanza.se/_api/account-overview/overview/categorizedAccounts";
     export const ORDERBOOK = "https://www.avanza.se/_api/trading-critical/rest/orderbook";
+    export const ORDERS = "https://www.avanza.se/_api/trading/rest/orders";
+    export const DEALS = "https://www.avanza.se/_api/trading/rest/deals";
+
+    export const DEALEVENT = "https://www.avanza.se/_push/trading/deals";
+    export const ORDEREVENT = "https://www.avanza.se/_push/trading/orders";
 }

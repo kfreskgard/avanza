@@ -61,10 +61,10 @@ export enum AccountTypeEnum {
 }
 
 export interface AllOrdersAndDealsResponse {
-    orders: AllOrdersAndDealsResponseOrder[];
-    fundOrders: any[];
+    orders: Order[];
+    fundOrders: Order[];
     deals: Deal[];
-    fundDeals: any[];
+    fundDeals: Deal[];
 }
 
 export interface Deal {
@@ -75,7 +75,7 @@ export interface Deal {
     price: number;
     amount: number;
     time: string;
-    side: string;
+    side: OrderType;
     orderId: string;
     orderbook: DealOrderbook;
 }
@@ -97,35 +97,26 @@ export interface TypeClass {
 export interface DealOrderbook {
     id: string;
     name: string;
-    countryCode: Code;
-    currency: UnitEnum;
+    countryCode: string;
+    currency: string;
     instrumentType: string;
     volumeFactor: string;
+    isin?: string;
+    mic?: string;
 }
 
-export enum Code {
-    Empty = "",
-    Fi = "FI",
-    SE = "SE",
-    Us = "US",
+export enum OrderType {
+    Buy = "BUY",
+    Sell = "SELL",
 }
 
-export enum UnitEnum {
-    Empty = "",
-    Percentage = "percentage",
-    Sek = "SEK",
-    Usd = "USD",
-}
-
-export interface AllOrdersAndDealsResponseOrder {
+export interface Order {
     account: DealAccount;
     orderId: string;
-    volume: number;
-    openVolume?: number;
     price: number;
     amount: number;
     orderbookId: string;
-    side: string;
+    side: OrderType;
     validUntil: string;
     created: string;
     deletable: boolean;
@@ -135,6 +126,14 @@ export interface AllOrdersAndDealsResponseOrder {
     stateText: string;
     stateMessage: string;
     orderbook: DealOrderbook;
+    additionalParameters?: EmptyObject;
+    visibleOnAccountDate?: string;
+    stopTime?: string;
+    volume?: number;
+    openVolume?: number;
+}
+
+export interface EmptyObject {
 }
 
 export interface CategorizedAccountsResponse {
@@ -173,7 +172,7 @@ export interface CategorizedAccountsResponseAccount {
 
 export interface ValueUnit {
     value: number;
-    unit: UnitEnum;
+    unit: string;
     unitType?: UnitType;
     decimalPrecision?: number;
 }
@@ -251,6 +250,51 @@ export interface Ohlc {
     totalVolumeTraded: number;
 }
 
+export interface DealEvent {
+    dealId: string;
+    accountId: string;
+    orderbook: EventOrderbook;
+    orderType: OrderType;
+    price: number;
+    volume: number;
+    dealTime: number;
+    pushAction: Action;
+    orderId: string;
+    sum: number;
+}
+
+export interface EventOrderbook {
+    id: string;
+    name: string;
+    tickerSymbol: string;
+    marketplaceName: string;
+    countryCode: string;
+    instrumentType: InstrumentTypeEnum;
+    tradable: boolean;
+    volumeFactor: number;
+    currencyCode: string;
+    flagCode: string;
+}
+
+export enum InstrumentTypeEnum {
+    Certificate = "CERTIFICATE",
+    Fund = "FUND",
+    Stock = "STOCK",
+    Unknown = "UNKNOWN",
+    Warrant = "WARRANT",
+}
+
+export enum Action {
+    Deleted = "DELETED",
+    New = "NEW",
+    Updated = "UPDATED",
+}
+
+export interface DealsResponse {
+    deals: Deal[];
+    fundDeals: Deal[];
+}
+
 export interface OrderResponse {
     orderRequestStatus: string;
     message: string;
@@ -262,16 +306,17 @@ export interface DetailedStockResponse {
     stock: Stock;
     company: Company;
     companyEvents: CompanyEvents;
+    holdings?: Holdings;
     companyOwners: CompanyOwners;
     brokerTradeSummaries: BrokerTradeSummary[];
     dividends: Dividends;
     tradingTerms: TradingTerms;
     fundExposures: FundExposure[];
-    companyHoldings?: CompanyHoldings;
+    ordersAndDeals?: OrdersAndDeals;
+    esgView?: EsgView;
     trades: Trade[];
     orderDepthLevels: Level[];
-    ordersAndDeals?: OrdersAndDeals;
-    holdings?: Holdings;
+    companyHoldings?: CompanyHoldings;
 }
 
 export interface BrokerTradeSummary {
@@ -284,12 +329,12 @@ export interface BrokerTradeSummary {
 
 export interface Company {
     companyId: string;
-    sectorName: string;
     description: string;
     ceo: string;
     chairman: string;
     totalNumberOfShares: number;
     homepage: string;
+    sectorName?: string;
 }
 
 export interface CompanyEvents {
@@ -314,7 +359,7 @@ export interface CompanyHoldings {
 
 export interface Holding {
     orderbookId?: string;
-    countryCode: Code;
+    countryCode: string;
     name: string;
     substance: number;
     hasPosition?: boolean;
@@ -340,7 +385,7 @@ export interface Dividend {
     exDate: string;
     paymentDate?: string;
     amount: number;
-    currencyCode: UnitEnum;
+    currencyCode: string;
     dividendType?: DividendType;
     exDateStatus?: string;
 }
@@ -350,10 +395,34 @@ export enum DividendType {
     Ordinary = "ORDINARY",
 }
 
+export interface EsgView {
+    companyEqualityView: CompanyEqualityView;
+    sustainabilityDevelopmentGoals: ProductInvolvement[];
+    productInvolvements: ProductInvolvement[];
+}
+
+export interface CompanyEqualityView {
+    womenOnBoard: number;
+    womenInSeniorManagment: number;
+    womenInWorkforce: number;
+    womenOnBoardYear: number;
+    womenInSeniorManagmentYear: number;
+    womenInWorkforceYear: number;
+}
+
+export interface ProductInvolvement {
+    year: number;
+    value: number;
+    name: string;
+    title: string;
+}
+
 export interface FundExposure {
     orderbookId: string;
     name: string;
     exposure: number;
+    instrumentType?: InstrumentTypeEnum;
+    countryCode?: string;
     hasPosition: boolean;
 }
 
@@ -364,6 +433,7 @@ export interface Holdings {
     totalDevelopmentAmount: number;
     acquiredPrice: number;
     acquiredValue: number;
+    averageAcquiredPriceOrderbookCurrency?: number;
     accountAndPositionsView: AccountAndPositionsView[];
 }
 
@@ -378,6 +448,7 @@ export interface AccountAndPositionsView {
     acquiredPrice: number;
     amountDevelopment: number;
     percentDevelopment: number;
+    averageAcquiredPriceOrderbookCurrency?: number;
 }
 
 export interface Level {
@@ -392,7 +463,7 @@ export interface Side {
 
 export interface OrdersAndDeals {
     orders: OrdersAndDealsOrder[];
-    deals: any[];
+    deals: OrdersAndDealsDeal[];
     hasStoplossOrders: boolean;
     accounts?: OrdersAndDealsAccount[];
 }
@@ -401,13 +472,26 @@ export interface OrdersAndDealsAccount {
     accountId: string;
     accountName: string;
     accountType: AccountTypeEnum;
+    accountTypeName?: string;
+}
+
+export interface OrdersAndDealsDeal {
+    accountId: string;
+    accountName: string;
+    accountType: AccountTypeEnum;
+    orderType: OrderType;
+    dealId: string;
+    dealTimeMillis: number;
+    volume: number;
+    price: number;
+    amount: number;
 }
 
 export interface OrdersAndDealsOrder {
     accountName: string;
     accountId: string;
     accountType: AccountTypeEnum;
-    orderType: string;
+    orderType: OrderType;
     orderId: string;
     orderState: string;
     validUntil: string;
@@ -421,8 +505,9 @@ export interface OrdersAndDealsOrder {
 
 export interface Stock {
     preferred: boolean;
-    depositaryReceipt: boolean;
+    depositoryReceipt?: boolean;
     numberOfShares: number;
+    depositaryReceipt?: boolean;
 }
 
 export interface Trade {
@@ -448,11 +533,11 @@ export interface OrderBookResponse {
     isin: string;
     instrumentId: string;
     marketPlace: string;
-    countryCode: Code;
+    countryCode: string;
     orderbookStatus: string;
     tickSizeList: TickSizeList;
     collateralValue: number;
-    currency: UnitEnum;
+    currency: string;
     minValidUntil: string;
     maxValidUntil: string;
     instrumentType: InstrumentTypeEnum;
@@ -471,14 +556,6 @@ export interface FeatureSupport {
     marketTradesSummary: boolean;
 }
 
-export enum InstrumentTypeEnum {
-    Certificate = "CERTIFICATE",
-    Fund = "FUND",
-    Stock = "STOCK",
-    Unknown = "UNKNOWN",
-    Warrant = "WARRANT",
-}
-
 export interface TickSizeList {
     tickSizeEntries: TickSizeEntry[];
 }
@@ -492,6 +569,38 @@ export interface TickSizeEntry {
 export interface OrderDepthResponse {
     receivedTime: number;
     levels: Level[];
+}
+
+export interface OrderEvent {
+    id: string;
+    accountId: string;
+    orderbook: EventOrderbook;
+    currentVolume: number;
+    openVolume: null;
+    price: number;
+    validDate: string;
+    type: OrderType;
+    state: State;
+    action: Action;
+    modifiable: boolean;
+    deletable: boolean;
+    sum: number;
+    visibleDate: null;
+    orderDateTime: number;
+    eventTimeStamp: number;
+    uniqueId: string;
+    additionalParameters?: null;
+}
+
+export interface State {
+    value: string;
+    description: string;
+    name: string;
+}
+
+export interface OrdersResponse {
+    orders: Order[];
+    fundOrders: Order[];
 }
 
 export interface PositionsResponse {
@@ -529,17 +638,17 @@ export interface Instrument {
     type: InstrumentTypeEnum;
     name: string;
     orderbook: InstrumentOrderbook | null;
-    currency: UnitEnum;
+    currency: string;
     isin: string;
     volumeFactor: number;
 }
 
 export interface InstrumentOrderbook {
     id: string;
-    flagCode: Code | null;
+    flagCode: null | string;
     name: string;
     type: InstrumentTypeEnum;
-    tradeStatus: Trad;
+    tradeStatus: string;
     quote: OrderbookQuote;
     turnover: Turnover;
     lastDeal: LastDeal;
@@ -558,10 +667,6 @@ export interface OrderbookQuote {
     latest: ValueUnit;
     change: ValueUnit;
     changePercent: ValueUnit;
-}
-
-export enum Trad {
-    BuyableAndSellable = "BUYABLE_AND_SELLABLE",
 }
 
 export interface Turnover {
@@ -591,10 +696,7 @@ export interface SearchResponse {
     pageSearchResults: PageSearchResults;
     searchQuery: string;
     urlEncodedSearchQuery: string;
-    configurationResponse: ConfigurationResponse;
-}
-
-export interface ConfigurationResponse {
+    configurationResponse: EmptyObject;
 }
 
 export interface PageSearchResults {
@@ -613,7 +715,7 @@ export interface ResultGroup {
 
 export interface Hit {
     link: Link;
-    currency: HitCurrency;
+    currency: string;
     lastPrice: string;
     todayChange: string;
     todayChangeDirection: string;
@@ -623,12 +725,6 @@ export interface Hit {
     oneQuarterAgoChangeDirection: string;
     highlightedDisplayTitle: string;
     fundResult: FundResultClass | FundResultEnum;
-}
-
-export enum HitCurrency {
-    Eur = "EUR",
-    Sek = "SEK",
-    Usd = "USD",
 }
 
 export interface FundResultClass {
@@ -645,7 +741,7 @@ export enum FundResultEnum {
 
 export interface Link {
     type: InstrumentTypeEnum;
-    flagCode: Code;
+    flagCode: string;
     orderbookId: string;
     urlDisplayName: string;
     linkDisplay: string;
@@ -660,7 +756,7 @@ export interface StockResponse {
     name: string;
     isin: string;
     sectorName: string;
-    tradable: Trad;
+    tradable: string;
     listing: Listing;
     historicalClosingPrices: HistoricalClosingPrices;
     keyIndicators: KeyIndicators;
@@ -711,7 +807,7 @@ export interface KeyIndicators {
 
 export interface PerShare {
     value: number;
-    currency: UnitEnum;
+    currency: string;
 }
 
 export interface Report {
@@ -722,8 +818,8 @@ export interface Report {
 export interface Listing {
     shortName: string;
     tickerSymbol: string;
-    countryCode: Code;
-    currency: UnitEnum;
+    countryCode: string;
+    currency: string;
     marketPlaceCode: string;
     marketPlaceName: string;
     marketListName?: string;

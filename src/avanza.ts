@@ -1,4 +1,4 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse } from "./types/response";
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse } from "./types/response";
 import axios, { AxiosRequestConfig } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
@@ -6,10 +6,17 @@ import TOTP from 'totp-generator';
 import { URL } from "./constants";
 import { AuthenticateResponse, AuthenticateRequest, ChartRequest, DeleteOrderRequest, ModifyOrderRequest, NewOrderRequest } from "./types/requests";
 import { AvanzaError } from "./avanzaError";
-export class Avanza {
+import EventSource from 'eventsource';
+import { EventEmitter } from 'events';
 
-  #client = wrapper(axios.create({ jar: new CookieJar() }));
+export class Avanza extends EventEmitter {
+  #cookieJar = new CookieJar();
+  #client = wrapper(axios.create({ jar: this.#cookieJar }));
   #authInfo: AuthenticateResponse;
+
+  constructor() {
+    super();
+  }
 
   private async post<T>(url: string, data: any): Promise<T> {
     try {
@@ -48,6 +55,14 @@ export class Avanza {
     const cookies = this.#client.defaults.jar.getCookiesSync(URL.AVANZA);
     const cookie = cookies.find(c => c.key === "AZACSRF");
     this.#client.defaults.headers.common['x-securitytoken'] = cookie.value;
+
+    const eventSourceInitDict = { headers: { 'Cookie': cookies } };
+
+    const dealEvent = new EventSource(URL.DEALEVENT, eventSourceInitDict);
+    const orderEvent = new EventSource(URL.ORDEREVENT, eventSourceInitDict);
+    dealEvent.addEventListener("DEAL", (deal) => this.emit("DEAL", deal.data));
+    orderEvent.addEventListener("ORDER", (order) => this.emit("ORDER", order.data));
+
     return response;
   }
 
@@ -126,5 +141,13 @@ export class Avanza {
 
   getOrderBook(id: string) {
     return this.get<OrderBookResponse>(URL.ORDERBOOK + `/${id}`);
+  }
+
+  getOrders() {
+    return this.get<OrdersResponse>(URL.ORDERS);
+  }
+
+  getDeals() {
+    return this.get<DealsResponse>(URL.DEALS);
   }
 }
