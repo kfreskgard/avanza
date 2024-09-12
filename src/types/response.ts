@@ -153,19 +153,18 @@ export interface CategorizedAccountsResponseAccount {
     totalValue: ValueUnit;
     buyingPower: ValueUnit;
     buyingPowerWithoutCredit: ValueUnit;
-    interestRate: ValueUnit;
     depositInterestRate: ValueUnit;
     loanInterestRate: ValueUnit;
     credit: ValueUnit | null;
     name: AccountName;
     status: string;
     errorStatus: string;
-    overmortgaged: boolean;
-    overdrawn: boolean;
+    overmortgaged: null;
+    currencyBalances: ValueUnit[];
+    overdrawn: any[];
     performance: Performance;
     settings: Settings;
-    clearingNumber: string;
-    accountNumber: string;
+    externalAccountNumber: string;
     urlParameterId: string;
     owner: boolean;
 }
@@ -189,13 +188,13 @@ export interface AccountName {
 }
 
 export interface Performance {
-    THIS_YEAR?: Profit;
-    ALL_TIME?: Profit;
-    ONE_YEAR?: Profit;
-    THREE_YEARS?: Profit;
-    ONE_MONTH?: Profit;
-    ONE_WEEK?: Profit;
     THREE_MONTHS?: Profit;
+    THREE_YEARS?: Profit;
+    THIS_YEAR?: Profit;
+    ONE_MONTH?: Profit;
+    ONE_YEAR?: Profit;
+    ALL_TIME?: Profit;
+    ONE_WEEK?: Profit;
 }
 
 export interface Profit {
