@@ -6,7 +6,7 @@ export namespace URL {
     export const CHART = 'https://www.avanza.se/_api/price-chart/stock';
     export const MARKETGUIDE = 'https://www.avanza.se/_api/market-guide';
     export const ALLORDERSANDDEALS = 'https://www.avanza.se/_api/trading/rest/allordersanddeals';
-    export const ORDER = 'https://www.avanza.se/_api/trading-critical/rest/order';
+    export const ORDER = 'https://www.avanza.se/_api/trading/order-entry/order';
     export const REQUESTID = 'https://www.avanza.se/_api/trading/rest/order/requestid';
     export const POSITIONS = "https://www.avanza.se/_api/position-data/positions";
     export const ACCOUNTSFORPUSH = "https://www.avanza.se/_api/trading-critical/rest/accountsforpush";
@@ -16,5 +16,6 @@ export namespace URL {
     export const DEALS = "https://www.avanza.se/_api/trading/rest/deals";
 
     export const DEALEVENT = "https://www.avanza.se/_push/trading/deals";
-    export const ORDEREVENT = "https://www.avanza.se/_push/trading/orders";
+    export const ORDEREVENT = "https://www.avanza.se/_push/trading/orders/";
+    export const QUOTEEVENT = "https://www.avanza.se/_push/quote-web-push";
 }

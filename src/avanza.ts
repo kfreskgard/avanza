@@ -1,4 +1,4 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse } from "./types/response";
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse, QuotePush } from "./types/response";
 import axios, { AxiosRequestConfig } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
@@ -8,11 +8,16 @@ import { AuthenticateResponse, AuthenticateRequest, ChartRequest, DeleteOrderReq
 import { AvanzaError } from "./avanzaError";
 import EventSource from 'eventsource';
 import { EventEmitter } from 'events';
+import { SseMessage, SseStream } from "./sse";
+
+// Avanza rejects some push streams from clients that don't look like a browser.
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
 export class Avanza extends EventEmitter {
   #cookieJar = new CookieJar();
   #client = wrapper(axios.create({ jar: this.#cookieJar }));
   #authInfo: AuthenticateResponse;
+  #quoteStreams = new Map<string, SseStream>();
 
   constructor() {
     super();
@@ -56,7 +61,7 @@ export class Avanza extends EventEmitter {
     const cookie = cookies.find(c => c.key === "AZACSRF");
     this.#client.defaults.headers.common['x-securitytoken'] = cookie.value;
 
-    const eventSourceInitDict = { headers: { 'Cookie': cookies } };
+    const eventSourceInitDict = { headers: this.streamHeaders() };
 
     const dealEvent = new EventSource(URL.DEALEVENT, eventSourceInitDict);
     const orderEvent = new EventSource(URL.ORDEREVENT, eventSourceInitDict);
@@ -131,8 +136,41 @@ export class Avanza extends EventEmitter {
     return this.get<string[]>(URL.ACCOUNTSFORPUSH);
   }
 
-  getPushSubscriptionId(): string {
-    return this.#authInfo.pushSubscriptionId;
+  /**
+   * Streams quotes for an orderbook until quoteUnsubscribe is called. Reconnects automatically;
+   * connection problems are emitted as "STREAM_ERROR" events.
+   */
+  quoteSubscribe(orderbookId: string, cb: (quote: QuotePush) => void) {
+    this.quoteUnsubscribe(orderbookId);
+    const stream = new SseStream(`${URL.QUOTEEVENT}/${orderbookId}`, () => this.streamHeaders());
+    stream.on('message', (message: SseMessage) => {
+      if (message.event === 'info') {
+        return;
+      }
+      let data: unknown;
+      try {
+        data = JSON.parse(message.data);
+      } catch {
+        return;
+      }
+      if (data && typeof data === 'object') {
+        cb({ ...data, orderbookId });
+      }
+    });
+    stream.on('error', (error) => this.emit("STREAM_ERROR", { orderbookId, error }));
+    this.#quoteStreams.set(orderbookId, stream.start());
+  }
+
+  quoteUnsubscribe(orderbookId: string) {
+    this.#quoteStreams.get(orderbookId)?.close();
+    this.#quoteStreams.delete(orderbookId);
+  }
+
+  private streamHeaders(): Record<string, string> {
+    return {
+      'Cookie': this.#cookieJar.getCookieStringSync(URL.AVANZA),
+      'User-Agent': BROWSER_USER_AGENT
+    };
   }
 
   getCategorizedAccounts() {

@@ -689,6 +689,11 @@ export interface QuoteResponse {
     volumeWeightedAveragePrice?: number;
 }
 
+/** Quote from the quote push stream. Assumed to have the same fields as QuoteResponse. */
+export interface QuotePush extends Partial<QuoteResponse> {
+    orderbookId: string;
+}
+
 export interface SearchResponse {
     totalNumberOfHits: number;
     resultGroups: ResultGroup[];
