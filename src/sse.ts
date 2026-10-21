@@ -7,13 +7,19 @@ export interface SseMessage {
 
 /**
  * Minimal server-sent events client on top of fetch.
- * Emits "message" for every event and "error" when the stream fails, then reconnects until closed.
+ * Emits "message" for every event, "end" when the server ends the stream and "error" when the stream fails.
+ * Reconnects until closed: right away after an end, after retryMs after an error.
  */
 export class SseStream extends EventEmitter {
   #abort?: AbortController;
   #closed = false;
+  #lastEventId?: string;
 
-  constructor(private url: string, private headers: () => Record<string, string>, private retryMs = 5000) {
+  /**
+   * @param minLifetimeMs A stream the server ends sooner than this is retried after retryMs instead of
+   * right away, so a server that keeps ending the stream isn't hammered.
+   */
+  constructor(private url: string, private headers: () => Record<string, string>, private retryMs = 5000, private minLifetimeMs = 1000) {
     super();
   }
 
@@ -30,17 +36,23 @@ export class SseStream extends EventEmitter {
   private async run() {
     while (!this.#closed) {
       this.#abort = new AbortController();
+      const started = Date.now();
+      let delay = this.retryMs;
       try {
-        const res = await fetch(this.url, {
-          headers: { Accept: 'text/event-stream', ...this.headers() },
-          signal: this.#abort.signal
-        });
+        const headers: Record<string, string> = { Accept: 'text/event-stream', ...this.headers() };
+        if (this.#lastEventId) {
+          headers['Last-Event-ID'] = this.#lastEventId;
+        }
+        const res = await fetch(this.url, { headers, signal: this.#abort.signal });
         if (!res.ok || !res.body) {
           throw new Error(`HTTP ${res.status} from ${this.url}`);
         }
         await this.read(res.body);
         if (!this.#closed) {
-          this.emit('error', new Error(`Stream ended: ${this.url}`));
+          this.emit('end');
+          if (Date.now() - started >= this.minLifetimeMs) {
+            delay = 0;
+          }
         }
       } catch (err) {
         if (this.#closed) {
@@ -48,8 +60,8 @@ export class SseStream extends EventEmitter {
         }
         this.emit('error', err);
       }
-      if (!this.#closed) {
-        await new Promise(resolve => setTimeout(resolve, this.retryMs));
+      if (!this.#closed && delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
@@ -87,6 +99,9 @@ export class SseStream extends EventEmitter {
             event = value;
           } else if (field === 'data') {
             data.push(value);
+          } else if (field === 'id' && !value.includes('\0')) {
+            // Sent as Last-Event-ID on reconnect.
+            this.#lastEventId = value;
           }
         }
       }

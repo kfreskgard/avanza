@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
     "target": "ES2021",
     "declaration": true,
+    "rootDir": "./src",
     "outDir": "./dist",
+    "strict": false,
+    "types": ["node"],
     "esModuleInterop": true
   },
   "include": ["src/**/*"]

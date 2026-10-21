@@ -1,12 +1,11 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse, QuotePush } from "./types/response";
-import axios, { AxiosRequestConfig } from 'axios';
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse, QuotePush, DealEvent, OrderEvent } from "./types/response";
+import axios, { AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
-import TOTP from 'totp-generator';
+import { TOTP } from 'totp-generator';
 import { URL } from "./constants";
 import { AuthenticateResponse, AuthenticateRequest, ChartRequest, DeleteOrderRequest, ModifyOrderRequest, NewOrderRequest } from "./types/requests";
 import { AvanzaError } from "./avanzaError";
-import EventSource from 'eventsource';
 import { EventEmitter } from 'events';
 import { SseMessage, SseStream } from "./sse";
 
@@ -15,9 +14,11 @@ const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKi
 
 export class Avanza extends EventEmitter {
   #cookieJar = new CookieJar();
-  #client = wrapper(axios.create({ jar: this.#cookieJar }));
+  #client: AxiosInstance = wrapper(axios.create({ jar: this.#cookieJar } as CreateAxiosDefaults) as any);
   #authInfo: AuthenticateResponse;
   #quoteStreams = new Map<string, SseStream>();
+  #tradingStreams: SseStream[] = [];
+  #recentEvents = new Set<string>();
 
   constructor() {
     super();
@@ -50,25 +51,71 @@ export class Avanza extends EventEmitter {
   public async authenticate(options: AuthenticateRequest) {
     const { username, password, secret } = options;
     await this.post(URL.AUTHNCREDENTIALS, { username, password });
-    const totp = TOTP(secret);
+    const { otp } = await TOTP.generate(secret, { explicitZeroPad: true });
     const response = await this.post<AuthenticateResponse>(URL.AUTHNTOTP, {
-      "totpCode": totp.toString(),
+      "totpCode": otp,
       "method": "TOTP"
     });
 
     this.#authInfo = response;
-    const cookies = this.#client.defaults.jar.getCookiesSync(URL.AVANZA);
+    const cookies = this.#cookieJar.getCookiesSync(URL.AVANZA);
     const cookie = cookies.find(c => c.key === "AZACSRF");
     this.#client.defaults.headers.common['x-securitytoken'] = cookie.value;
 
-    const eventSourceInitDict = { headers: this.streamHeaders() };
-
-    const dealEvent = new EventSource(URL.DEALEVENT, eventSourceInitDict);
-    const orderEvent = new EventSource(URL.ORDEREVENT, eventSourceInitDict);
-    dealEvent.addEventListener("DEAL", (deal) => this.emit("DEAL", deal.data));
-    orderEvent.addEventListener("ORDER", (order) => this.emit("ORDER", order.data));
+    // Close the streams from a previous login, otherwise every event is emitted once per login.
+    this.closeTradingStreams();
+    this.#tradingStreams = [
+      this.tradingStream(URL.DEALEVENT, "DEAL", (deal: DealEvent) => deal.dealId && `${deal.dealId}:${deal.pushAction}`),
+      this.tradingStream(URL.ORDEREVENT, "ORDER", (order: OrderEvent) => order.uniqueId)
+    ];
 
     return response;
+  }
+
+  /** Closes the deal/order streams and all quote streams. */
+  close() {
+    this.closeTradingStreams();
+    for (const orderbookId of [...this.#quoteStreams.keys()]) {
+      this.quoteUnsubscribe(orderbookId);
+    }
+  }
+
+  private tradingStream(url: string, event: "DEAL" | "ORDER", eventKey: (data: any) => string | undefined) {
+    const stream = new SseStream(url, () => this.streamHeaders());
+    stream.on('message', (message: SseMessage) => {
+      if (message.event !== event) {
+        return;
+      }
+      // Event data is a JSON string; emit it parsed so listeners get the DealEvent/OrderEvent types.
+      let data: any;
+      try {
+        data = JSON.parse(message.data);
+      } catch {
+        this.emit(event, message.data);
+        return;
+      }
+      // Avanza sometimes re-sends an identical event (same dealId/uniqueId) within a second.
+      const key = eventKey(data);
+      if (key) {
+        const id = `${event}:${key}`;
+        if (this.#recentEvents.has(id)) {
+          return;
+        }
+        this.#recentEvents.add(id);
+        if (this.#recentEvents.size > 1000) {
+          this.#recentEvents.delete(this.#recentEvents.values().next().value);
+        }
+      }
+      this.emit(event, data);
+    });
+    stream.on('error', (error) => this.emit("STREAM_ERROR", { stream: event, error }));
+    stream.on('end', () => this.emit("STREAM_END", { stream: event }));
+    return stream.start();
+  }
+
+  private closeTradingStreams() {
+    this.#tradingStreams.forEach(stream => stream.close());
+    this.#tradingStreams = [];
   }
 
   async getAllOrdersAndDeals() {
@@ -120,6 +167,7 @@ export class Avanza extends EventEmitter {
     return this.get<ChartResponse>(url, { params: parameters });
   }
 
+  /** Resolves to null (HTTP 200) for an unknown orderbook id, unlike getStock which throws a 404. */
   async getQuote(id: string) {
     return this.get<QuoteResponse>(`${URL.MARKETGUIDE}/stock/${id}/quote`);
   }
@@ -158,6 +206,7 @@ export class Avanza extends EventEmitter {
       }
     });
     stream.on('error', (error) => this.emit("STREAM_ERROR", { orderbookId, error }));
+    stream.on('end', () => this.emit("STREAM_END", { orderbookId }));
     this.#quoteStreams.set(orderbookId, stream.start());
   }
 

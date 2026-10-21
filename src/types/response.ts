@@ -131,6 +131,8 @@ export interface Order {
     stopTime?: string;
     volume?: number;
     openVolume?: number;
+    originalVolume?: number;
+    condition?: string;
 }
 
 export interface EmptyObject {
@@ -140,7 +142,7 @@ export interface CategorizedAccountsResponse {
     categories: Category[];
     accounts: CategorizedAccountsResponseAccount[];
     loans: any[];
-    accountsSummary: AccountsSummary;
+    accountsSummary?: AccountsSummary;
 }
 
 export interface CategorizedAccountsResponseAccount {
@@ -148,7 +150,7 @@ export interface CategorizedAccountsResponseAccount {
     categoryId: string;
     balance: ValueUnit;
     profit: Profit;
-    totalAcquiredValue: ValueUnit;
+    totalAcquiredValue?: ValueUnit;
     type: AccountTypeEnum;
     totalValue: ValueUnit;
     buyingPower: ValueUnit;
@@ -164,9 +166,9 @@ export interface CategorizedAccountsResponseAccount {
     overdrawn: any[];
     performance: Performance;
     settings: Settings;
-    externalAccountNumber: string;
+    externalAccountNumber?: string;
     urlParameterId: string;
-    owner: boolean;
+    owner?: boolean;
 }
 
 export interface ValueUnit {
@@ -215,12 +217,12 @@ export interface AccountsSummary {
 export interface Category {
     name: string;
     totalValue: ValueUnit;
-    buyingPower: ValueUnit;
+    buyingPower?: ValueUnit;
     id: string;
-    profit: Profit;
+    profit?: Profit;
     performance: Performance;
     savingsGoalView: null;
-    sortOrder: number;
+    sortOrder?: number;
 }
 
 export interface ChartResponse {
@@ -295,8 +297,11 @@ export interface DealsResponse {
 }
 
 export interface OrderResponse {
+    /** "SUCCESS" or "ERROR". Rejected orders are returned with HTTP 200 and "ERROR". */
     orderRequestStatus: string;
     message: string;
+    /** Set on errors, e.g. "se.avanzabank.trading.order.exceeds.price.deviation". */
+    messageCode?: string;
     orderId?: string;
     parameters?: string[];
 }
@@ -314,7 +319,7 @@ export interface DetailedStockResponse {
     ordersAndDeals?: OrdersAndDeals;
     esgView?: EsgView;
     trades: Trade[];
-    orderDepthLevels: Level[];
+    orderDepth: OrderDepthResponse;
     companyHoldings?: CompanyHoldings;
 }
 
@@ -533,7 +538,7 @@ export interface OrderBookResponse {
     instrumentId: string;
     marketPlace: string;
     countryCode: string;
-    orderbookStatus: string;
+    orderbookStatus?: string;
     tickSizeList: TickSizeList;
     collateralValue: number;
     currency: string;
@@ -575,9 +580,10 @@ export interface OrderEvent {
     accountId: string;
     orderbook: EventOrderbook;
     currentVolume: number;
+    originalVolume?: number;
     openVolume: null;
     price: number;
-    validDate: string;
+    validDate: string | null;
     type: OrderType;
     state: State;
     action: Action;
@@ -589,6 +595,8 @@ export interface OrderEvent {
     eventTimeStamp: number;
     uniqueId: string;
     additionalParameters?: null;
+    detailedCancelStatus?: string | null;
+    condition?: string;
 }
 
 export interface State {
@@ -600,6 +608,7 @@ export interface State {
 export interface OrdersResponse {
     orders: Order[];
     fundOrders: Order[];
+    cancelledOrders?: Order[];
 }
 
 export interface PositionsResponse {
@@ -689,9 +698,23 @@ export interface QuoteResponse {
     volumeWeightedAveragePrice?: number;
 }
 
-/** Quote from the quote push stream. Assumed to have the same fields as QuoteResponse. */
-export interface QuotePush extends Partial<QuoteResponse> {
+/** Quote from the quote push stream. */
+export interface QuotePush {
     orderbookId: string;
+    buyPrice?: number;
+    sellPrice?: number;
+    lastPrice?: number;
+    closingPrice?: number;
+    highestPrice?: number;
+    lowestPrice?: number;
+    change?: number;
+    changePercent?: number;
+    spreadPercent?: number;
+    totalValueTraded?: number;
+    totalVolumeTraded?: number;
+    volumeWeightedAveragePrice?: number;
+    updated?: string;
+    lastPriceUpdated?: string;
 }
 
 export interface SearchResponse {
@@ -759,7 +782,7 @@ export interface StockResponse {
     orderbookId: string;
     name: string;
     isin: string;
-    sectorName: string;
+    sectorName?: string;
     tradable: string;
     listing: Listing;
     historicalClosingPrices: HistoricalClosingPrices;
