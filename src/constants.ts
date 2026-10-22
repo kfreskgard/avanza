@@ -4,6 +4,7 @@ export namespace URL {
     export const AUTHNTOTP = 'https://www.avanza.se/_api/authentication/sessions/totp';
 
     export const CHART = 'https://www.avanza.se/_api/price-chart/stock';
+    export const SEARCH = 'https://www.avanza.se/_api/search/filtered-search';
     export const MARKETGUIDE = 'https://www.avanza.se/_api/market-guide';
     export const ALLORDERSANDDEALS = 'https://www.avanza.se/_api/trading/rest/allordersanddeals';
     export const ORDER = 'https://www.avanza.se/_api/trading/order-entry/order';

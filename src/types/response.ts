@@ -853,3 +853,19 @@ export interface Listing {
     tickSizeListId: string;
     marketTradesAvailable: boolean;
 }
+
+export interface SearchHit {
+    type: string;
+    title: string;
+    orderBookId: string;
+    flagCode: string;
+    marketPlaceName: string;
+    urlSlugName: string;
+    tradeable: boolean;
+    price?: { last: string; currency: string } | null;
+}
+
+export interface SearchResponse {
+    totalNumberOfHits: number;
+    hits: SearchHit[];
+}

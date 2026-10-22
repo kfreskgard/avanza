@@ -1,4 +1,4 @@
-import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse, QuotePush, DealEvent, OrderEvent } from "./types/response";
+import { AllOrdersAndDealsResponse, OrderResponse, ChartResponse, PositionsResponse, OrderDepthResponse, StockResponse, DetailedStockResponse, QuoteResponse, CategorizedAccountsResponse, OrderBookResponse, OrdersResponse, DealsResponse, QuotePush, DealEvent, OrderEvent, SearchResponse } from "./types/response";
 import axios, { AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
@@ -150,6 +150,10 @@ export class Avanza extends EventEmitter {
 
   async getStockDetails(id: string) {
     return this.get<DetailedStockResponse>(`${URL.MARKETGUIDE}/stock/${id}/details`);
+  }
+
+  async search(query: string, types: string[] = ["STOCK"]) {
+    return this.post<SearchResponse>(URL.SEARCH, { query, searchFilter: { types }, pagination: { from: 0, size: 10 } });
   }
 
   async getChart(req: ChartRequest) {

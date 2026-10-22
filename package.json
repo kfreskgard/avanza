@@ -1,6 +1,6 @@
 {
   "name": "@kfreskgard/avanza",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Package to interact with the web API of Avanza",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "/dist"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "tsx --test \"test/**/*.test.ts\"",
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "publish-lib": "npm run build && npm publish",
@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
 }
