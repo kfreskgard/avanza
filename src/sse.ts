@@ -8,18 +8,23 @@ export interface SseMessage {
 /**
  * Minimal server-sent events client on top of fetch.
  * Emits "message" for every event, "end" when the server ends the stream and "error" when the stream fails.
- * Reconnects until closed: right away after an end, after retryMs after an error.
+ * Reconnects until closed: right away after an end, with backoff after an error.
  */
 export class SseStream extends EventEmitter {
   #abort?: AbortController;
   #closed = false;
   #lastEventId?: string;
+  #failures = 0;
+  #wake?: () => void;
 
   /**
+   * @param retryMs Wait before the first retry after an error. It doubles with every error in a row, up to
+   * maxRetryMs, and each wait is randomized between half and all of that so streams that fail together
+   * don't retry together. A Retry-After header from the server is waited out in full.
    * @param minLifetimeMs A stream the server ends sooner than this is retried after retryMs instead of
    * right away, so a server that keeps ending the stream isn't hammered.
    */
-  constructor(private url: string, private headers: () => Record<string, string>, private retryMs = 5000, private minLifetimeMs = 1000) {
+  constructor(private url: string, private headers: () => Record<string, string>, private retryMs = 5000, private minLifetimeMs = 1000, private maxRetryMs = 60_000) {
     super();
   }
 
@@ -31,6 +36,7 @@ export class SseStream extends EventEmitter {
   close() {
     this.#closed = true;
     this.#abort?.abort();
+    this.#wake?.();
   }
 
   private async run() {
@@ -38,6 +44,7 @@ export class SseStream extends EventEmitter {
       this.#abort = new AbortController();
       const started = Date.now();
       let delay = this.retryMs;
+      let retryAfterMs = 0;
       try {
         const headers: Record<string, string> = { Accept: 'text/event-stream', ...this.headers() };
         if (this.#lastEventId) {
@@ -45,8 +52,14 @@ export class SseStream extends EventEmitter {
         }
         const res = await fetch(this.url, { headers, signal: this.#abort.signal });
         if (!res.ok || !res.body) {
-          throw new Error(`HTTP ${res.status} from ${this.url}`);
+          const retryAfter = res.headers.get('retry-after');
+          retryAfterMs = parseRetryAfter(retryAfter);
+          const body = (await res.text().catch(() => '')).trim().slice(0, 500);
+          throw new Error(`HTTP ${res.status} from ${this.url}`
+            + (retryAfter ? ` (Retry-After: ${retryAfter})` : '')
+            + (body ? `: ${body}` : ''));
         }
+        this.#failures = 0;
         await this.read(res.body);
         if (!this.#closed) {
           this.emit('end');
@@ -58,12 +71,25 @@ export class SseStream extends EventEmitter {
         if (this.#closed) {
           return;
         }
+        this.#failures++;
+        const backoff = Math.min(this.maxRetryMs, this.retryMs * 2 ** (this.#failures - 1));
+        delay = Math.max(backoff / 2 + Math.random() * backoff / 2, retryAfterMs);
         this.emit('error', err);
       }
       if (!this.#closed && delay > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await this.sleep(delay);
       }
     }
+  }
+
+  private sleep(ms: number) {
+    return new Promise<void>(resolve => {
+      const timer = setTimeout(resolve, ms);
+      this.#wake = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+    });
   }
 
   private async read(body: ReadableStream<Uint8Array>) {
@@ -107,4 +133,17 @@ export class SseStream extends EventEmitter {
       }
     }
   }
+}
+
+/** Retry-After is either seconds or an HTTP date. */
+function parseRetryAfter(value: string | null): number {
+  if (!value) {
+    return 0;
+  }
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000);
+  }
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? 0 : Math.max(0, date - Date.now());
 }
